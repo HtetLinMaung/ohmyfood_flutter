@@ -3,6 +3,7 @@ import 'package:here_sdk/core.dart';
 import 'package:here_sdk/mapview.dart';
 import 'package:ohmyfood_flutter/components/button/main_button.dart';
 import 'package:ohmyfood_flutter/constants/colors.dart';
+import 'package:geolocator/geolocator.dart';
 
 class MapScreen extends StatefulWidget {
   static const routeName = 'MapScreen';
@@ -12,6 +13,20 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentLocation();
+  }
+
+  Future<Position> _getCurrentLocation() async {
+    Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.bestForNavigation);
+    print(position.latitude);
+    print(position.longitude);
+    return position;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,7 +52,24 @@ class _MapScreenState extends State<MapScreen> {
       ),
       body: Stack(
         children: [
-          HereMap(onMapCreated: _onMapCreated),
+          FutureBuilder<Position>(
+            future: _getCurrentLocation(),
+            builder: (ctx, snapshot) {
+              if (snapshot.hasData) {
+                return HereMap(
+                  onMapCreated: (HereMapController hereMapController) =>
+                      _onMapCreated(hereMapController, snapshot.data.latitude,
+                          snapshot.data.longitude),
+                );
+              } else if (snapshot.hasError) {
+                return Center(
+                  child: Text(snapshot.error),
+                );
+              } else {
+                return Container();
+              }
+            },
+          ),
           Align(
             alignment: Alignment.bottomCenter,
             child: Card(
@@ -79,17 +111,25 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  void _onMapCreated(HereMapController hereMapController) {
-    hereMapController.mapScene.loadSceneForMapScheme(MapScheme.normalDay,
+  void _onMapCreated(
+      HereMapController hereMapController, double latitude, double longitude) {
+    hereMapController.mapScene.loadSceneForMapScheme(MapScheme.greyDay,
         (MapError error) {
       if (error != null) {
         print('Map scene not loaded. MapError: ${error.toString()}');
         return;
       }
 
+      hereMapController.mapScene.addMapMarker(MapMarker(
+          GeoCoordinates(latitude, longitude),
+          MapImage.withFilePathAndWidthAndHeight(
+              'images/marker.jpg', 120, 100)));
+
       const double distanceToEarthInMeters = 8000;
+      // hereMapController.pinWidget(
+      //     Icon(Icons.add), GeoCoordinates(latitude, longitude));
       hereMapController.camera.lookAtPointWithDistance(
-          GeoCoordinates(52.530932, 13.384915), distanceToEarthInMeters);
+          GeoCoordinates(latitude, longitude), distanceToEarthInMeters);
     });
   }
 }
