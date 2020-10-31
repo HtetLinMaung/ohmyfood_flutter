@@ -31,7 +31,7 @@ dependencies:
   provider: ^4.3.2+2
   badges: ^1.1.3
   geolocator: ^6.1.1
-
+  font_awesome_flutter: ^8.10.0
 
   # The following adds the HERE SDK for Flutter plugin folder to your application.
   here_sdk:
