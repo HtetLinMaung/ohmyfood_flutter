@@ -17,6 +17,10 @@ class MenuDetailScreen extends StatefulWidget {
 }
 
 class _MenuDetailScreenState extends State<MenuDetailScreen> {
+  ScrollController _controller = ScrollController();
+  ScrollController _outerController = ScrollController();
+  int _edgeCount = 0;
+
   @override
   Widget build(BuildContext context) {
     final appProvider = context.watch<AppProvider>();
@@ -45,74 +49,111 @@ class _MenuDetailScreenState extends State<MenuDetailScreen> {
               ),
             ),
           ),
-          Column(
+          ListView(
+            controller: _outerController,
+            physics: ClampingScrollPhysics(),
             children: [
-              Expanded(
-                flex: 3,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20.0,
-                    vertical: 40.0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    // mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          GestureDetector(
-                            child: Icon(
-                              Icons.close,
-                              size: 20,
-                            ),
-                            onTap: () {
-                              context.read<MenuProvider>().setIsUpdate(false);
-                              menu.ingredients
-                                  .forEach((element) => element.quantity = 0);
-                              Navigator.pop(context);
-                            },
-                          ),
-                        ],
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    GestureDetector(
+                      child: Icon(
+                        Icons.close,
+                        size: 20,
                       ),
-                      Expanded(
-                        child: Text(''),
-                      ),
-                      Text(
-                        menu.name,
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: Text(
-                              menu.description,
-                              style: TextStyle(
-                                color: kNormalFontColor,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(''),
-                          ),
-                          Text(
-                            '${menu.price} KS',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                      onTap: () {
+                        context.read<MenuProvider>().setIsUpdate(false);
+                        menu.ingredients
+                            .forEach((element) => element.quantity = 0);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 240,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20.0,
+                ),
+                child: Text(
+                  menu.name,
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              IngredientCard(),
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: 20.0,
+                  right: 20.0,
+                  bottom: 40,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        menu.description,
+                        style: TextStyle(
+                          color: kNormalFontColor,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(''),
+                    ),
+                    Text(
+                      '${menu.price} KS',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: MediaQuery.of(context).size.height,
+                child: NotificationListener(
+                  onNotification: (n) {
+                    if (_controller.position.pixels > 0) {
+                      _outerController.animateTo(
+                        _outerController.position.maxScrollExtent,
+                        duration: Duration(
+                          milliseconds: 300,
+                        ),
+                        curve: Curves.bounceInOut,
+                      );
+                    }
+
+                    if (_controller.position.atEdge &&
+                        _controller.position.pixels == 0) {
+                      _edgeCount++;
+                      if (_edgeCount >= 10) {
+                        _outerController.animateTo(
+                          _outerController.position.minScrollExtent,
+                          duration: Duration(
+                            milliseconds: 300,
+                          ),
+                          curve: Curves.bounceInOut,
+                        );
+                      }
+                    } else {
+                      _edgeCount = 0;
+                    }
+                    return true;
+                  },
+                  child: IngredientCard(
+                    controller: _controller,
+                  ),
+                ),
+              ),
             ],
           ),
           Align(
